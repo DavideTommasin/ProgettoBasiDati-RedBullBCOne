@@ -1,0 +1,230 @@
+CREATE TABLE EdizioneRedBull (
+
+	Anno		YEAR(4),
+	PRIMARY KEY (Anno)
+
+)ENGINE = InnoDB;
+
+CREATE TABLE BBoyInvitato (
+
+	Nickname			VARCHAR(20),
+	Nazionalità			VARCHAR(20),
+	EdizioneRedBull		YEAR(4),
+	Cognome			VARCHAR(20),
+	Nome				VARCHAR(20),
+	DataNascita 			DATE,
+    	NazioneWorld			VARCHAR(20),
+   	CittàWorld			VARCHAR(20),
+
+	PRIMARY KEY (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (EdizioneRedBull) 
+		REFERENCES EdizioneRedBull (Anno),
+	FOREIGN KEY (NazioneWorld, CittàWorld, EdizioneRedBull) 
+		REFERENCES WorldFinal (Nazione, Città, EdizioneRedBull)
+
+)ENGINE = InnoDB;
+
+CREATE TABLE BBoyIscritto (
+
+	Nickname			VARCHAR(20),
+	Nazionalità			VARCHAR(20),
+	EdizioneRedBull		YEAR(4),
+	Cognome			VARCHAR(20),
+	Nome				VARCHAR(20),
+	DataNascita 			DATE,
+
+	PRIMARY KEY (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (EdizioneRedBull) 
+		REFERENCES EdizioneRedBull (Anno)
+
+)ENGINE = InnoDB;
+
+CREATE TABLE Giudice (
+
+	Nickname			VARCHAR(20),
+	Nazionalità			VARCHAR(20),
+	EdizioneRedBull		YEAR(4),
+	Cognome			VARCHAR(20),
+	Nome				VARCHAR(20),
+	DataNascita 			DATE,
+
+	PRIMARY KEY (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (EdizioneRedBull) REFERENCES EdizioneRedBull (Anno)
+
+)ENGINE = InnoDB;
+CREATE TABLE Cypher (
+
+	Nazione 			VARCHAR(20),
+	Città 				VARCHAR(20),
+	EdizioneRedBull		YEAR(4),
+	DataSvolgimento		DATE,
+	NicknameBBoyVincitore	VARCHAR(20),
+	NazionelitàBBoyVincitore	VARCHAR(20),
+	NazioneFinal 			VARCHAR(20),
+	CittàFinal			VARCHAR(20),
+	NicknameDj			VARCHAR(20),
+	NazionalitàDj			VARCHAR(20),
+
+	PRIMARY KEY (Nazione, Città, EdizioneRedBull),
+	FOREIGN KEY (EdizioneRedBull) 
+		REFERENCES EdizioneRedBull (Anno),
+	FOREIGN KEY (NicknameBBoyVincitore NazionalitàBBoyVincitore, EdizioneRedBull)
+		REFERENCES BBoyIscritto (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (NazioneFinal, CittàFinal, EdizioneRedBull) 
+		REFERENCES Final (Nazione, Città, EdizioneRedBull),
+	FOREIGN KEY (NicknameDj, NazionalitàDj) 
+		REFERENCES Dj (Nickname, Nazione)
+
+)ENGINE = InnoDB;
+
+CREATE TABLE Final (
+
+	Nazione 			VARCHAR(20),
+	Città 				VARCHAR(20),
+	EdizioneRedBull		YEAR(4),
+	DataSvolgimento		DATE,
+	Zona				VARCHAR(20),
+	NicknameBBoyVincitore	VARCHAR(20),
+	NazionelitàBBoyVincitore	VARCHAR(20),
+	NazioneWorldFinal 		VARCHAR(20),
+	CittàWorldFinal		VARCHAR(20),
+	NicknameDj			VARCHAR(20),
+	NazionalitàDj			VARCHAR(20),
+
+	PRIMARY KEY (Nazione, Città, EdizioneRedBull),
+	FOREIGN KEY (EdizioneRedBull) 
+		REFERENCES EdizioneRedBull (Anno),
+	FOREIGN KEY (NicknameBBoyVincitore NazionalitàBBoyVincitore, EdizioneRedBull)
+		REFERENCES BBoyIscritto (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (NazioneWorldFinal, CittàWorldFinal, EdizioneRedBull) 
+		REFERENCES WorldFinal (Nazione, Città, EdizioneRedBull),
+	FOREIGN KEY (NicknameDj, NazionalitàDj) 
+		REFERENCES Dj (Nickname, Nazione)
+
+)ENGINE = InnoDB;
+
+
+
+
+
+
+CREATE TABLE WorldFinal (
+
+	Nazione 				VARCHAR(20),
+	Città 					VARCHAR(20),
+	EdizioneRedBull			YEAR(4),
+	DataSvolgimento			DATE,
+	NicknameBBoyVincitoreInvitato	VARCHAR(20),
+	NazionelitàBBoyVincitoreInvitato	VARCHAR(20),
+	NicknameBBoyVincitoreIscritto	VARCHAR(20),
+	NazionelitàBBoyVincitoreIscritto	VARCHAR(20),
+	NicknameDj				VARCHAR(20),
+	NazionalitàDj				VARCHAR(20),
+
+	PRIMARY KEY (Nazione, Città, EdizioneRedBull),
+	FOREIGN KEY (EdizioneRedBull) 
+		REFERENCES EdizioneRedBull (Anno),
+	FOREIGN KEY (NicknameDj, NazionalitàDj) 
+		REFERENCES Dj (Nickname, Nazione),
+	FOREIGN KEY (NicknameBBoyVincitoreInvitato, NazionalitàBBoyVincitoreInvitato,
+                                       EdizioneRedBull) 
+		REFERENCES BBoyInvitato (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (NicknameBBoyVincitoreIscritto, NazionalitàBBoyVincitoreIscritto,
+			    EdizioneRedBull)
+		REFERENCES BBoyIscritto (Nickname, Nazionalità, EdizioneRedBull)
+	
+)ENGINE = InnoDB;
+
+CREATE TABLE Dj (
+
+	Nickname			VARCHAR(20),
+	Nazionalità			VARCHAR(20),
+	Cognome			VARCHAR(20),
+	Nome				VARCHAR(20),
+	DataNascita 			DATE,
+
+	PRIMARY KEY (Nickname, Nazionalità)
+
+)ENGINE = InnoDB;
+
+CREATE TABLE Iscrizione (
+
+	NicknameBBoyIscritto 	VARCHAR(20),
+	NazionalitàBBoyIscritto 	VARCHAR(20),
+	EdizioneRedBull 		YEAR(4),
+	NazioneCypher 		VARCHAR(20),
+	CittàCypher			VARCHAR(20),
+
+	PRIMARI KEY (NicknameBBoyIscritto, NazionalitàBBoyIscritto, EdizioneRedBull,
+                                     NazioneCypher, CittàCypher),
+	FOREIGN KEY (NicknameBBoyIscritto, NazionalitàBBoyIscritto, EdizioneRedBull)
+		REFERENCES BBoyIscritto (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (NazioneCypher, CittàCypher, EdizioneRedBull) 
+		REFERENCES Cypher (Nazione, Città, EdizioneRedBull)
+
+)ENGINE = InnoDB;
+
+CREATE TABLE PresiedereCypher (
+
+	NicknameGiudice 		VARCHAR(20),
+	NazionalitàGiudice 		VARCHAR(20),
+	EdizioneRedBull	 	YEAR(4),
+	NazioneCypher 		VARCHAR(20),
+	CittàCypher 			VARCHAR(20),
+
+	PRIMARI KEY (NicknameGiudice, NazionalitàGiudice, EdizioneRedBull, NazioneCypher,
+			  CittàCypher),
+	FOREIGN KEY (NicknameGiudice, NazionalitàGiudice, EdizioneRedBull) 
+		REFERENCES Giudice (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (NazioneCypher, CittàCypher, EdizioneRedBull) 
+		REFERENCES Cypher (Nazione, Città, EdizioneRedBull)
+
+)ENGINE = InnoDB;
+
+CREATE TABLE PresiedereFinal (
+
+	NicknameGiudice 		VARCHAR(20),
+	NazionalitàGiudice 		VARCHAR(20),
+	EdizioneRedBull		YEAR(4),
+	NazioneFinal			VARCHAR(20),
+	CittàFinal 			VARCHAR(20),
+
+	PRIMARI KEY (NicknameGiudice, NazionalitàGiudice, EdizioneRedBull, NazioneFinal,
+			  CittàFinal),
+	FOREIGN KEY (NicknameGiudice, NazionalitàGiudice, EdizioneRedBull) 
+		REFERENCES Giudice (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (NazioneFinal, CittàFinal, EdizioneRedBull) 
+		REFERENCES Final (Nazione, Città, EdizioneRedBull),
+
+)ENGINE = InnoDB;
+
+CREATE TABLE PresiedereWorldFinal (
+
+	NicknameGiudice 		VARCHAR(20),
+	NazionalitàGiudice 		VARCHAR(20),
+	EdizioneRedBull		YEAR(4),
+	NazioneWorldFinal		VARCHAR(20),
+	CittàWorldFinal 		VARCHAR(20),
+
+	PRIMARI KEY (NicknameGiudice, NazionalitàGiudice, EdizioneRedBull,
+			  NazioneWorldFinal , CittàWorldFinal),
+	FOREIGN KEY (NicknameGiudice, NazionalitàGiudice, EdizioneRedBull)
+		REFERENCES Giudice (Nickname, Nazionalità, EdizioneRedBull),
+	FOREIGN KEY (NazioneWorldFinal, CittàWorldFinal, EdizioneRedBull)
+		REFERENCES WorldFinal (Nazione, Città, EdizioneRedBull)
+
+)ENGINE = InnoDB;
+
+
+
+
+
+
+CREATE TABLE Login (
+
+	Username			VARCHAR(20),
+	Password			VARCHAR(20),
+	email				VARCHAR(20),
+	PRIMARY KEY (Username, Password)
+
+)ENGINE = InnoDB;

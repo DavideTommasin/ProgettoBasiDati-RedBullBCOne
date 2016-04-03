@@ -1,0 +1,185 @@
+QUERY 1: Query che visualizzi nickname di tutti i bboy che hanno vinto piu di un world final, e mostrare anche in che anno lo hanno vinto.
+
+SELECT WF1.NicknameBBoyVincitoreInvitato, WF1.EdizioneRedBull 
+FROM   WorldFinal WF1 JOIN WorldFinal WF2 
+       ON (WF1.NicknameBBoyVincitoreInvitato = WF2.NicknameBBoyVincitoreInvitato AND WF1.EdizioneRedBull <> WF2.EdizioneRedBull)
+UNION
+SELECT WF1.NicknameBBoyVincitoreIscritto, WF1.EdizioneRedBull 
+FROM   WorldFinal WF1 JOIN WorldFinal WF2
+       ON (WF1.NicknameBBoyVincitoreIscritto = WF2.NicknameBBoyVincitoreIscritto AND WF1.EdizioneRedBull <> WF2.EdizioneRedBull)
+
+
+QUERY 2: Query che visualizzi tutti i bboy che hanno vinto un final nel 2014 e fanno da giudice nel 2015, visualizzare anche in quale cypher presiedono
+         come giudici.
+
+SELECT Cypher.NicknameBBoyVincitore, Cypher.Nazione, Cypher.Citta
+FROM Cypher, Giudice, PresiedereCypher
+WHERE Cypher.EdizioneRedBull = "2014"
+	  AND 
+      Giudice.EdizioneRedBull = "2015"
+      AND
+      Cypher.NicknameBBoyVincitore = Giudice.Nickname
+      AND
+      PresiedereCypher.EdizioneRedBull = "2015"
+      AND
+      PresiedereCypher.NicknameGiudice = Giudice.Nickname
+GROUP BY Cypher.NicknameBBoyVincitore
+
+
+QUERY 3: Query che conta quanti bboy si sono iscritti nel 2014 che hanno piu di 25 anni e che nel 2015 sono stati invitati al world final
+
+SELECT COUNT(*) AS numeroBBoy
+FROM Iscrizione, BBoyIscritto, BBoyInvitato
+WHERE Iscrizione.NicknameBBoyIscritto = BBoyIscritto.Nickname
+      AND
+      YEAR(CURDATE())-YEAR(BBoyIscritto.DataNascita)>"25"
+      AND
+      BBoyInvitato.EdizioneRedBull = "2015"
+      AND
+      Iscrizione.NicknameBBoyIscritto = BBoyInvitato.Nickname
+
+
+QUERY 4: Query che visualizza nazione, citta e data svogimento di un final nel 2014, il quale è svolto nella stessa nazione di un cypher del 2014, dove se
+         ne sono svolti almeno 2
+
+SELECT DISTINCT Final.Nazione, Final.Citta, Final.DataSvolgimento
+FROM Final, Cypher
+WHERE Final.EdizioneRedBull ="2014"
+      AND
+     Final.Nazione = any (SELECT c1.Nazione
+                          FROM Cypher c1
+                          WHERE c1.EdizioneRedBull = "2014"     
+                          GROUP BY c1.Nazione
+                          HAVING COUNT(c1.Nazione) > "1")
+
+QUERY 5: Query che visualizza tutte le gare presiedute da quel giudice, e ordinare i giudici per nickname
+
+SELECT *
+FROM (SELECT Giudice.Nickname, Giudice.Nazionalita, Cypher.Nazione, Cypher.Citta
+      FROM Giudice, Cypher, PresiedereCypher
+      WHERE Giudice.Nickname = PresiedereCypher.NicknameGiudice
+      AND
+      PresiedereCypher.NazioneCypher = Cypher.Nazione
+      UNION
+      SELECT Giudice.Nickname, Giudice.Nazionalita, Final.Nazione, Final.Citta
+      FROM Giudice, Final, PresiedereFinal
+      WHERE Giudice.Nickname = PresiedereFinal.NicknameGiudice
+      AND
+      PresiedereFinal.NazioneFinal = Final.Nazione
+      UNION
+      SELECT Giudice.Nickname, Giudice.Nazionalita, WorldFinal.Nazione, WorldFinal.Citta
+      FROM Giudice, WorldFinal, PresiedereWorldFinal
+      WHERE Giudice.Nickname = PresiedereWorldFinal.NicknameGiudice
+      AND
+      PresiedereWorldFinal.NazioneWorldFinal = WorldFinal.Nazione
+      ) as TAB
+ORDER BY TAB.Nickname 
+
+QUERY 6: Query che visualizza con quale frequenza, in percentuale, vengono effettuati i cypher durante l'anno 2014
+
+SELECT MONTH(Cypher.DataSvolgimento) as Mesi, COUNT(MONTH(Cypher.DataSvolgimento))/51
+FROM Cypher
+GROUP BY Mesi
+
+TRIGGER 1: Trigger che dopo aver inserito il contest world final iscrive al sito il BBoy vincitore, se non gia iscritto.
+           Avra come Username e Password il suo Nickname
+
+DELIMITER |
+CREATE TRIGGER creaUserSito
+AFTER INSERT ON WorldFinal
+FOR EACH ROW
+BEGIN
+    IF NOT EXISTS (SELECT L.Username
+          FROM Login L
+          WHERE L.Username = new.NicknameBBoyVincitoreInvitato
+            OR L.Username = new.NicknameBBoyVincitoreIscritto) THEN
+      IF (new.NicknameBBoyVincitoreInvitato IS NOT NULL) THEN
+          INSERT INTO Login (Username, Password, email) VALUES (new.NicknameBBoyVincitoreInvitato,new.NicknameBBoyVincitoreInvitato, 'email@email.com');
+      ELSE
+          INSERT INTO Login (Username, Password, email) VALUES (new.NicknameBBoyVincitoreIscritto,new.NicknameBBoyVincitoreIscritto , 'email@email.com');
+      END IF;
+    END IF;
+END |
+DELIMITER ;
+
+TRIGGER 2: Trigger che controlla se l'e-mail è stata inserita correttamente, per cui nel formato "_ @ _ . _"
+
+DELIMITER |
+CREATE TRIGGER controllaMail
+BEFORE INSERT ON Login
+FOR EACH ROW
+BEGIN
+  DECLARE errore VARCHAR(20);
+  IF(new.email NOT LIKE '%_@%_.__%') THEN  
+    SELECT Username INTO errore
+    FROM Login
+    LIMIT 1;
+    INSERT INTO Login (Username) VALUES (errore);
+  END IF;
+END |
+DELIMITER ;
+
+FUNZIONE 1: Funzione che restituisce il numero di vittorie complessive di un certo BBoy
+
+DELIMITER |
+CREATE FUNCTION numeroVittorie (NicknameBBoy VARCHAR(20))
+RETURNS INT 
+BEGIN 
+      DECLARE numeroCY INT; 
+      DECLARE numeroFI INT; 
+      DECLARE numeroWF INT; 
+      SELECT COUNT(*) INTO numeroCY 
+      FROM Cypher 
+      WHERE NicknameBBoyVincitore = NicknameBBoy ;
+      SELECT COUNT(*) INTO numeroFI 
+      FROM Final 
+      WHERE NicknameBBoyVincitore = NicknameBBoy ;
+      SELECT COUNT(*) INTO numeroWF 
+      FROM WorldFinal 
+      WHERE NicknameBBoyVincitoreInvitato = NicknameBBoy 
+            OR NicknameBBoyVincitoreIscritto = NicknameBBoy ;
+      RETURN numeroCY+numeroFI+numeroWF ;
+END |
+DELIMITER;
+
+FUNZIONE 2: Funzione che restituisce il Nickname del BBoy (Invitato,Iscritto o Giudice) più vecchio in un determinato anno
+
+DELIMITER |
+CREATE FUNCTION piuVecchio(annoRedBull YEAR(4))
+RETURNS VARCHAR(500)
+BEGIN
+    DECLARE oldInv VARCHAR(20);
+    DECLARE dataInv DATE;
+    DECLARE oldIsc VARCHAR(20);
+    DECLARE dataIsc DATE;
+    DECLARE oldGiu VARCHAR(20);
+    DECLARE dataGiu DATE;
+    SELECT Nickname, DataNascita INTO oldInv, dataInv
+    FROM BBoyInvitato
+    WHERE DataNascita <= All (SELECT DataNascita FROM BBoyInvitato)
+          AND EdizioneRedBull = annoRedBull;
+    SELECT Nickname, DataNascita INTO oldIsc, dataIsc
+    FROM BBoyIscritto
+    WHERE DataNascita <= All (SELECT DataNascita FROM BBoyIscritto)
+          AND EdizioneRedBull = annoRedBull;
+    SELECT Nickname, DataNascita INTO oldGiu, dataGiu
+    FROM Giudice
+    WHERE DataNascita <= All (SELECT DataNascita FROM Giudice)
+          AND EdizioneRedBull = annoRedBull;
+    IF (dataInv < dataIsc) THEN
+        IF (dataInv < dataGiu) THEN
+            RETURN oldInv;
+        END IF;
+    ELSEIF (dataIsc < dataGiu) THEN
+          RETURN oldIsc;
+      ELSE
+          RETURN oldGiu;
+    END IF;
+END |
+DELIMITER;
+
+
+
+
+
+
